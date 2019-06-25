@@ -1,0 +1,16 @@
+[bastion]
+lb-0.alopezme.lab.pnq2.cee.redhat.com
+
+[masters]
+master-[0:2].alopezme.lab.pnq2.cee.redhat.com
+
+[infra]
+infra-[0:1].alopezme.lab.pnq2.cee.redhat.com
+
+[nodes]
+node-[0:5].alopezme.lab.pnq2.cee.redhat.com
+
+[ocp:children]
+masters
+infra
+nodes

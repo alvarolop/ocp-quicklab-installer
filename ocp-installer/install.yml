@@ -1,0 +1,6 @@
+---
+- name: Include the prerequisites playbook
+  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/prerequisites.yml
+
+- name: Include the deploy_cluster playbook
+  import_playbook: /usr/share/ansible/openshift-ansible/playbooks/deploy_cluster.yml

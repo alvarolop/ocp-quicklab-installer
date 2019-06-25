@@ -1,0 +1,4 @@
+# {{ ansible_managed }}
+{% for item in range(0,50) %}
+/srv/nfs/user-vols/pv{{ item }} *(rw,root_squash)
+{% endfor %}

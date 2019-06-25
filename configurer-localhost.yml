@@ -1,0 +1,12 @@
+- name: Add machines to hosts file and configure ssh connection
+  hosts: localhost
+  connection: local
+  become: yes
+  tasks:
+    - name: Add vms to hosts file
+      lineinfile:
+        dest: "/etc/hosts"
+        state: present
+        line: "{{ item.ip }} {{ item.host }}"
+        backup: yes
+      loop: "{{ myhosts }}"

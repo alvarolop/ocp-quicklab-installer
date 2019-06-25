@@ -1,0 +1,124 @@
+---
+- name: Add admin as cluster-admin
+  hosts: "{{ groups['masters'][0] }}"
+  tasks:
+    - name: This module requires the OpenShift Python client. Try `pip install openshift`
+      yum:
+        name: python2-openshift.noarch
+        state: present
+    - name: Add admin as cluster-admin
+      k8s:
+        state: present
+        definition:
+          apiVersion: authorization.openshift.io/v1
+          kind: ClusterRoleBinding
+          metadata:
+            name: "{{ ocp.admin.username }}-cluster-admin"
+          roleRef:
+            name: cluster-admin
+          subjects:
+          - kind: User
+            name: "{{ ocp.admin.username }}"
+          groupNames: null
+          userNames:
+          - "{{ ocp.admin.username }}"
+
+- name: Create PVs for Users
+  hosts: nfs
+  tasks:
+    - name: Create directories for all the NFS
+      file:
+        path: "/srv/nfs/user-vols/pv{{ item }}"
+        state: directory
+      loop: "{{ range(0, 49)|list }}"
+
+    - name: Configure exports
+      template:
+        src: "templates/exports.j2"
+        dest: "/etc/exports.d/openshift-uservols.exports"
+        owner: "root"
+        group: "root"
+        mode: "0644"
+
+    - name: Change file ownership, group and permissions
+      file:
+        path: /srv/nfs
+        owner: nfsnobody
+        group: nfsnobody
+        mode: '0777'
+        recurse: yes
+
+    - name: Restart NFS server
+      systemd:
+        name: nfs-server
+        state: restarted
+
+- name: Create PVs (5G and 10G)
+  hosts: localhost
+  connection: local
+  tasks:
+    - name: This module requires the OpenShift Python client. Try `pip install openshift`
+      yum:
+        name: python2-openshift.noarch
+        state: present
+    
+    - name: "Get OpenShift Session Token"
+      uri:
+        url: "{{ ocp.host }}/oauth/authorize?response_type=token&client_id=openshift-challenging-client"
+        user: "{{ ocp.admin.username }}"
+        password: "{{ ocp.admin.password }}"
+        validate_certs: no
+        force_basic_auth: yes
+        method: GET
+      register: token_output
+
+    - name: Create PVs 5G
+      k8s:
+        state: present
+        # username: "{{ ocp.admin.username }}"
+        # password: "{{ ocp.admin.password }}"
+        host: "{{ ocp.host }}"
+        api_key: "{{ (token_output.url | regex_search('access_token=[^&]*')).split('access_token=')[1] }}"
+        verify_ssl: no
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: "pv-{{ item }}"
+          spec:
+            capacity:
+              storage: 5Gi
+            accessModes:
+            - ReadWriteOnce
+            - ReadWriteMany
+            nfs:
+              path: "/srv/nfs/user-vols/{{ item }}"
+              server: "{{ groups['masters'][0] }}"
+            persistentVolumeReclaimPolicy: Recycle
+      loop: "{{ range(0, 25)|list }}"
+    - name: Create PVs 10G
+      k8s:
+        state: present
+        # username: "{{ ocp.admin.username }}"
+        # password: "{{ ocp.admin.password }}"
+        host: "{{ ocp.host }}"
+        api_key: "{{ (token_output.url | regex_search('access_token=[^&]*')).split('access_token=')[1] }}"
+        verify_ssl: no
+        definition:
+          apiVersion: v1
+          kind: PersistentVolume
+          metadata:
+            name: "pv-{{ item }}"
+          spec:
+            capacity:
+              storage: 10Gi
+            accessModes:
+            - ReadWriteOnce
+            - ReadWriteMany
+            nfs:
+              path: "/srv/nfs/user-vols/{{ item }}"
+              server: "{{ groups['masters'][0] }}"
+            persistentVolumeReclaimPolicy: Recycle
+      loop: "{{ range(25,50)|list }}"
+
+
