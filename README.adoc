@@ -204,7 +204,7 @@ rh_registry_token: "{{ vault_rh_registry_token | mandatory }}"
 
 ----
 
-WARN: Only configure variables that are above `# It is not necessary to modify anything from here #`
+WARNING: Only configure variables that are above `# It is not necessary to modify anything from here #`
 
 
 .all.yml parameters
