@@ -1,0 +1,368 @@
+= OCP Quicklab installer
+Álvaro López Medina <alopezme@redhat.com>
+v1.0, 2019-06
+:toc: macro
+:sectanchors:
+:sectlinks:
+
+This repository contains the necessary resources to install OCP 3.11 in the Quicklab environment.
+
+toc::[]
+
+== Project structure
+
+The project is divided in two sections:
+
+- Configuration of localhost to access the VMs and configuration of the installation playbook.
+- Installation of OCP and post configuration of the cluster.
+
+The following diagram shows the structure of the project:
+
+[source, bash]
+----
+.
+├── ansible.cfg
+├── ansible.log
+├── configurer-localhost.yml
+├── configurer-uninstaller.yml
+├── configurer-vms.yml
+├── group_vars
+│   ├── all.yml
+│   └── vault.yml
+├── inventory
+├── LICENSE
+├── ocp-installer
+│   ├── ansible.cfg
+│   ├── install.yml
+│   ├── post-install.yml
+│   └── templates
+│       └── exports.j2
+├── README.md
+└── templates
+    ├── all.yml.j2
+    └── hosts.j2
+----
+
+:numbered:
+== Configure installation
+
+<!-- This section uses Ansible to perform the following actions:
+
+- In localhost:
+  - Configure `/home/$USER/.ssh/config` to access VMs with the SSH correct user.
+  - Configure `/etc/hosts` to resolve correctly the IPs of the VMs.
+- In OCP VMs:
+  - Copy the ssh keys.
+  - Allow openshift users to escalate privileges without password.
+  - Register the VMs.
+  - Configure OCP repositories
+  - Install and update packages. -->
+
+All the configuration is made in the following files:
+- /inventory
+- /group_vars/all.yml
+- /group_vars/vault.yml
+
+=== Configure /inventory
+
+This file needs to declare all of the VMs of the Quicklab cluster. There are four sections in this file:
+
+- `[bastion]`: It contains the bastion of the installation of the Quicklab, which is also the load balancer.
+- `[masters]`: It contains the master nodes.
+- `[infra]`: It contains the infra nodes.
+- `[nodes]`: It contains the compute nodes.
+
+Some extra packages will be installed only in the bastion node.
+
+For example, this is a copy of the file used currently:
+
+[source, ini]
+----
+[bastion]
+lb-0.alopezme.lab.pnq2.cee.redhat.com
+
+[masters]
+master-[0:2].alopezme.lab.pnq2.cee.redhat.com
+
+[infra]
+infra-[0:1].alopezme.lab.pnq2.cee.redhat.com
+
+[nodes]
+node-[0:5].alopezme.lab.pnq2.cee.redhat.com
+
+[ocp:children]
+masters
+infra
+nodes
+----
+
+
+=== Configure /group_vars/vault.yml
+
+Create a new file `/group_vars/vault.yml` with the following content:
+
+[source, yaml]
+----
+vault_rh_subscription_username: <RH_USERNAME>
+vault_rh_subscription_password: <RH_PASSWORD>
+vault_rh_subscription_poolid:   <POOL_ID>
+
+vault_rh_registry_username: <username>
+vault_rh_registry_token: <token_value>
+----
+
+Where `vault_rh_subscription_username` and `vault_rh_subscription_password` are the credentials of a RH account that owns subscriptions to the following repositories:
+
+- rhel-7-server-rpms
+- rhel-7-server-extras-rpms
+- rhel-7-server-ose-3.11-rpms
+- rhel-7-server-ansible-2.7-rpms
+- rhel-7-server-optional-rpms
+
+And `vault_rh_subscription_poolid` is the subscription pool ID.
+
+Moreover, the new registry, `registry.redhat.io`, requires authentication to access images and hosted content on OpenShift Container Platform. In order to obtain these credentials, access https://access.redhat.com/containers/ and create a new service account. After that, add the service account name to `vault_rh_registry_username` and the token in the `vault_rh_registry_token` field.
+
+
+For more information, please check the following instructions: https://docs.openshift.com/container-platform/3.11/install_config/configuring_red_hat_registry.html#install-config-configuring-red-hat-registry
+
+NOTE: This file has not been added to the repository for security purposes and `.gitignore` is configured to ignore this file.
+
+
+=== Configure /group_vars/all.yml
+
+
+This file contains most of the configuration of the installation and has the following structure:
+
+[source, yaml]
+----
+ansible_user:
+reinstall_packages: true
+openshift_master_default_subdomain: 
+openshift_master_cluster_hostname: 
+openshift_master_cluster_public_hostname: 
+ocp:
+  host: 
+  admin:
+    username: 
+    password: 
+openshift_master_htpasswd_users:
+  - user: admin
+    pass: $apr1$His0EwFR$UkDefLNZsO7SVCO.5932t1 # admin
+  - user: developer
+    pass: $apr1$S9dJkChQ$SrjX./WknEViSPERfa38t0 # developer
+myhosts:
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  
+# It is not necessary to modify anything from here #
+repositories:
+  - rhel-7-server-rpms
+  - rhel-7-server-extras-rpms
+  - rhel-7-server-ose-3.11-rpms
+  - rhel-7-server-ansible-2.7-rpms
+  - rhel-7-server-optional-rpms
+packages:
+  all:
+    - ansible-2.7.11-1.el7ae
+    - bind
+    - bind-utils
+    - wget
+    - git
+    - net-tools
+    - yum-utils
+    - iptables-services
+    - bridge-utils
+#    - atomic-openshift-utils
+    - bash-completion
+    - bash-completion-extras
+    - kexec-tools
+    - sos
+    - psacct
+    - openshift-ansible
+    - docker-1.13.1
+    - yum-plugin-versionlock
+  bastion:
+    - patch
+    - httpd-tools
+    - java-1.8.0-openjdk-headless
+    - tmux
+    - vim
+    - atomic-openshift-clients
+    - yum-plugin-versionlock
+    - python-pip
+    - python-passlib
+    - python-cryptography
+    - python-lxml
+    - tree
+    - screen
+    
+# Vault variables. Do not modify. Modify group_vars/vault.yml
+rh_subscription_username: "{{ vault_rh_subscription_username | mandatory }}"
+rh_subscription_password: "{{ vault_rh_subscription_password | mandatory }}"
+rh_subscription_poolid: "{{ vault_rh_subscription_poolid | mandatory }}"
+rh_registry_username: "{{ vault_rh_registry_username | mandatory }}"
+rh_registry_token: "{{ vault_rh_registry_token | mandatory }}"
+
+----
+
+WARN: Only configure variables that are above `# It is not necessary to modify anything from here #`
+
+
+.all.yml parameters
+[width="90%",cols="3,12",options="header",cols="m,d"]
+|=========================================================
+|Parameter |Definition 
+
+|ansible_user|
+User used to ssh the bastion and to execute the OCP installation.
+By default in Quicklab is *quicklab*.
+
+|reinstall_packages |
+Whether or not you want to resubscribe VMs, reconfigure repositories and reinstall packages in all the VMs.
+It defaults to `true`.
+
+|openshift_master_default_subdomain |
+This variable overrides the default subdomain to use for exposed routes.
+https://docs.openshift.com/container-platform/3.11/install/configuring_inventory_file.html#configuring-cluster-variables
+
+|openshift_master_cluster_hostname |
+This variable overrides the host name for the cluster, which defaults to the host name of the master. In this case, as we are using a load balancer, it would be the url of the load balancer.
+https://docs.openshift.com/container-platform/3.11/install/configuring_inventory_file.html#configuring-cluster-variables
+
+|openshift_master_cluster_public_hostname |
+This variable overrides the public host name for the cluster, which defaults to the host name of the master. In this case, as we are using a load balancer, it would be the url of the load balancer. If you use an external load balancer, specify the address of the external load balancer.
+https://docs.openshift.com/container-platform/3.11/install/configuring_inventory_file.html#configuring-cluster-variables
+
+|ocp.host |
+Endpoint to authenticate using `oc login`. By default, it is the `https://<lb url>:443`. 
+
+|ocp.admin.username |
+Username that will get cluster-admin permissions and will perform functions using the k8s module.
+
+|ocp.admin.password |
+Password of `ocp.admin.username`.
+
+|openshift_master_htpasswd_users a|
+Array of OCP users/passwords to be created during the installation. To generate passwords use the `htpasswd` command:
+
+[source,bash]
+----
+htpasswd -nb <user> <password>
+----
+
+The array should have the following structure:
+
+[source,yaml]
+----
+openshift_master_htpasswd_users:
+  - user: admin
+    pass: $apr1$His0EwFR$UkDefLNZsO7SVCO.5932t1 # admin
+  - user: developer
+    pass: $apr1$S9dJkChQ$SrjX./WknEViSPERfa38t0 # developer
+----
+
+
+
+|myhosts a|
+Array with all the VMs of the Quicklab environment (Including the bastion/lb) with their IPs and the ssh_user.
+
+The array should have the following structure:
+[source,yaml]
+----
+myhosts:
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+----
+|=========================================================
+
+
+
+
+
+== Install OCP
+
+Once all the files are set, there are two steps to intall OCP. First, execute two playbooks to configure VMs and the installation itself. Second, execute the OCP installation.
+
+
+=== Step 1: Configuration
+
+Execute two playbooks to configure all the machines.
+
+The **first playbook** configures localhost to connect correctly to the VMs.
+
+[source,bash]
+----
+ansible-playbook configurer-localhost.yml
+----
+
+This command will prompt you a password:
+   
+1) **"SUDO password"**. This password is prompted because `ansible.cfg` contains the option `become_ask_pass = True`. It is also possible to add the option `--ask-become-pass` in the `ansible-playbook` command to obtain the same result. It allows you to escalate privileges in your host machine to configure `/etc/hosts`. This is the password to run `sudo` commands in localhost.
+
+// 2) **"Vault password"**. This password is prompted because `ansible.cfg` contains the option `ask_vault_pass = True`. It is also possible to add the option `--ask-vault-pass` in the `ansible-playbook` command to obtain the same result. It allows you to open the vault file that contains information about your RH account.
+
+
+
+
+The **second playbook** prepares the nodes for the OCP installation:
+
+[source,bash]
+----
+ansible-playbook configurer-vms.yml --ask-vault-pass
+----
+
+This command will prompt you for three passwords required for different things:
+
+   
+1) **"SUDO password"**. This password is prompted because `ansible.cfg` contains the option `become_ask_pass = True`. It is also possible to add the option `--ask-become-pass` in the `ansible-playbook` command to obtain the same result. It allows you to escalate privileges in your host machine to configure `/etc/sudoers`. This is the password to run `sudo` commands in the remote VMs.
+
+// 1) **"SSH password"**. This password is prompted because the option `--ask-pass` is present. It allows you to connect to all the hosts to copy the ssh-key. By default, according to the kcli template, the password is `openshift`. This parameter is only necessary the first time that Ansible connects to each host.
+
+2) **"Vault password"**. This password is prompted because `--ask-vault-pass` is present. It is also possible to add the option `ask_vault_pass = True` in the `ansible.cfg` to obtain the same result. It allows you to open the vault file that contains information about your RH account.
+
+
+
+
+
+
+
+=== Step 2. OCP installation
+
+To install OCP 3.11 just ssh the bastion machine and execute the installation playbook:
+
+[source,bash]
+----
+ssh <lb_url>
+cd ocp-cluster-installer
+ansible-playbook install.yml
+ansible-playbook post-install.yml
+----
+
+
+There is one pod that cannot start do to its memory request `logging-es-data-master-<dc_id>` of project `openshift-logging`. Solve it executing the following commands:
+
+[source,bash]
+----
+oc patch dc/logging-es-data-master-<dc_id> -p '{"spec": {"template": {"spec": {"containers": [{"name": "elasticsearch","resources": {"requests": {"memory": "1Gi"}}}]}}}}' -n openshift-logging
+oc rollout latest logging-es-data-master-<dc_id>
+----
+
+[appendix]
+== Reset localhost
+
+[source,bash]
+----
+ansible-playbook configurer-uninstaller.yml --ask-pass
+----

@@ -1,2 +1,5 @@
 **/vault.yml
 *.log
+group_vars/all.yml
+README.html
+README.pdf

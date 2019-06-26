@@ -11,41 +11,41 @@
         regexp: "^%wheel"
         line: "%wheel ALL=(ALL) NOPASSWD: ALL"
         validate: '/usr/sbin/visudo -cf %s'
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Register as user and password using a given pool id
       redhat_subscription:
         state: present
         username: "{{ rh_subscription_username }}"
         password: "{{ rh_subscription_password }}"
         pool_ids: "{{ rh_subscription_poolid }}"
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Enable only the repositories required by OCP
       rhsm_repository:
         name: "{{ repositories }}"
         purge: True
         state: present
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Ensure EPEL is enabled. No package matching 'bash-completion-extras'
       yum:
         name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
         state: present
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Install necessary packages
       yum:
         name: "{{ packages.all }}"
         state: latest
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Lock Ansible version
       command: yum versionlock add ansible
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Upgrade all the packages
       yum:
         name: '*'
         state: latest
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Unconditionally reboot the machine with all defaults
       reboot:
-      when: remote.reinstall
+      when: reinstall_packages
 
       
 - name: Install packages in bastion and copy OCP installer files
@@ -58,28 +58,28 @@
       yum:
         name: "{{ packages.bastion }}"
         state: latest
-      when: remote.reinstall
+      when: reinstall_packages
     - name: Copy the installation playbooks to bastion
       copy:
         src: "ocp-installer/"
-        dest: "/home/{{ remote.user }}/ocp-cluster-installer"
-        owner: "{{ remote.user }}"
-        group: "{{ remote.user }}"
+        dest: "/home/{{ ansible_user }}/ocp-cluster-installer"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
     - name: Create directory for the variable
       file:
-        path: "/home/{{ remote.user }}/ocp-cluster-installer/group_vars"
+        path: "/home/{{ ansible_user }}/ocp-cluster-installer/group_vars"
         state: directory
-        owner: "{{ remote.user }}"
-        group: "{{ remote.user }}"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
     - name: Use the template to add (1) user/token RH registry, (2) htpasswd users,  (3) openshift_master_default_subdomain
       template:
         src: "templates/hosts.j2"
-        dest: "/home/{{ remote.user }}/ocp-cluster-installer/hosts"
-        owner: "{{ remote.user }}"
-        group: "{{ remote.user }}"
+        dest: "/home/{{ ansible_user }}/ocp-cluster-installer/hosts"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
     - name: Use the template send some variables to the ocp installation
       template:
         src: "templates/all.yml.j2"
-        dest: "/home/{{ remote.user }}/ocp-cluster-installer/group_vars/all.yml"
-        owner: "{{ remote.user }}"
-        group: "{{ remote.user }}"
+        dest: "/home/{{ ansible_user }}/ocp-cluster-installer/group_vars/all.yml"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"

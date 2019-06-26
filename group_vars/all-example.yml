@@ -1,0 +1,88 @@
+ansible_user: 
+reinstall_packages: true
+openshift_master_default_subdomain: 
+openshift_master_cluster_hostname: 
+openshift_master_cluster_public_hostname: 
+ocp:
+  host: 
+  admin:
+    username: 
+    password: 
+openshift_master_htpasswd_users:
+  - user: admin
+    pass: $apr1$His0EwFR$UkDefLNZsO7SVCO.5932t1 # admin
+  - user: developer
+    pass: $apr1$S9dJkChQ$SrjX./WknEViSPERfa38t0 # developer
+myhosts:
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+  - host: 
+    ip: 
+    user: 
+    
+repositories:
+  - rhel-7-server-rpms
+  - rhel-7-server-extras-rpms
+  - rhel-7-server-ose-3.11-rpms
+  - rhel-7-server-ansible-2.7-rpms
+  - rhel-7-server-optional-rpms
+packages:
+  all:
+    - ansible-2.7.11-1.el7ae
+    - bind
+    - bind-utils
+    - wget
+    - git
+    - net-tools
+    - yum-utils
+    - iptables-services
+    - bridge-utils
+#    - atomic-openshift-utils
+    - bash-completion
+    - bash-completion-extras
+    - kexec-tools
+    - sos
+    - psacct
+    - openshift-ansible
+    - docker-1.13.1
+    - yum-plugin-versionlock
+  bastion:
+    - patch
+    - httpd-tools
+    - java-1.8.0-openjdk-headless
+    - tmux
+    - vim
+    - atomic-openshift-clients
+    - yum-plugin-versionlock
+    - python-pip
+    - python-passlib
+    - python-cryptography
+    - python-lxml
+    - tree
+    - screen
+    
+# Vault variables. Do not modify. Modify group_vars/vault.yml
+rh_subscription_username: "{{ vault_rh_subscription_username | mandatory }}"
+rh_subscription_password: "{{ vault_rh_subscription_password | mandatory }}"
+rh_subscription_poolid: "{{ vault_rh_subscription_poolid | mandatory }}"
+rh_registry_username: "{{ vault_rh_registry_username | mandatory }}"
+rh_registry_token: "{{ vault_rh_registry_token | mandatory }}"
