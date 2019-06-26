@@ -2,6 +2,9 @@
 Álvaro López Medina <alopezme@redhat.com>
 v1.0, 2019-06
 :toc: macro
+:source-highlighter: pygments
+// Enable admonition icons
+:icons: font
 :sectanchors:
 :sectlinks:
 
@@ -45,18 +48,6 @@ The following diagram shows the structure of the project:
 
 :numbered:
 == Configure installation
-
-<!-- This section uses Ansible to perform the following actions:
-
-- In localhost:
-  - Configure `/home/$USER/.ssh/config` to access VMs with the SSH correct user.
-  - Configure `/etc/hosts` to resolve correctly the IPs of the VMs.
-- In OCP VMs:
-  - Copy the ssh keys.
-  - Allow openshift users to escalate privileges without password.
-  - Register the VMs.
-  - Configure OCP repositories
-  - Install and update packages. -->
 
 All the configuration is made in the following files:
 - /inventory
