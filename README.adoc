@@ -346,8 +346,14 @@ There is one pod that cannot start do to its memory request `logging-es-data-mas
 
 [source,bash]
 ----
+# Patch
 oc patch dc/logging-es-data-master-<dc_id> -p '{"spec": {"template": {"spec": {"containers": [{"name": "elasticsearch","resources": {"requests": {"memory": "1Gi"}}}]}}}}' -n openshift-logging
+oc patch dc/logging-es-data-master-<dc_id> -p '{"spec": {"template": {"spec": {"containers": [{"name": "elasticsearch","resources": {"limits": {"memory": "7Gi"}}}]}}}}' -n openshift-logging
+
+# Restart failed pods
 oc rollout latest logging-es-data-master-<dc_id>
+oc scale job logging-curator-1561534200 --replicas=0
+oc scale job logging-curator-1561534200 --replicas=1
 ----
 
 [appendix]
