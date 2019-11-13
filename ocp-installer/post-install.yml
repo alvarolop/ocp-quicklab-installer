@@ -28,7 +28,7 @@
   tasks:
     - name: Create directories for all the NFS
       file:
-        path: "/srv/nfs/user-vols/pv{{ item }}"
+        path: "/mnt/nfs/user-vols/pv-{{ item }}"
         state: directory
       loop: "{{ range(0, 55)|list }}"
 
@@ -42,7 +42,7 @@
 
     - name: Change file ownership, group and permissions
       file:
-        path: /srv/nfs
+        path: /mnt/nfs
         owner: nfsnobody
         group: nfsnobody
         mode: '0777'
@@ -75,8 +75,6 @@
     - name: Create PVs 5G
       k8s:
         state: present
-        # username: "{{ ocp.admin.username }}"
-        # password: "{{ ocp.admin.password }}"
         host: "{{ ocp.host }}"
         api_key: "{{ (token_output.url | regex_search('access_token=[^&]*')).split('access_token=')[1] }}"
         verify_ssl: no
@@ -92,15 +90,13 @@
             - ReadWriteOnce
             - ReadWriteMany
             nfs:
-              path: "/srv/nfs/user-vols/{{ item }}"
-              server: "{{ groups['masters'][0] }}"
+              path: "/mnt/nfs/user-vols/pv-{{ item }}"
+              server: "{{ groups['nfs'][0] }}"
             persistentVolumeReclaimPolicy: Recycle
       loop: "{{ range(0, 25)|list }}"
     - name: Create PVs 10G
       k8s:
         state: present
-        # username: "{{ ocp.admin.username }}"
-        # password: "{{ ocp.admin.password }}"
         host: "{{ ocp.host }}"
         api_key: "{{ (token_output.url | regex_search('access_token=[^&]*')).split('access_token=')[1] }}"
         verify_ssl: no
@@ -116,15 +112,13 @@
             - ReadWriteOnce
             - ReadWriteMany
             nfs:
-              path: "/srv/nfs/user-vols/{{ item }}"
-              server: "{{ groups['masters'][0] }}"
+              path: "/mnt/nfs/user-vols/pv-{{ item }}"
+              server: "{{ groups['nfs'][0] }}"
             persistentVolumeReclaimPolicy: Recycle
       loop: "{{ range(25,50)|list }}"
     - name: Create PVs 25G
       k8s:
         state: present
-        # username: "{{ ocp.admin.username }}"
-        # password: "{{ ocp.admin.password }}"
         host: "{{ ocp.host }}"
         api_key: "{{ (token_output.url | regex_search('access_token=[^&]*')).split('access_token=')[1] }}"
         verify_ssl: no
@@ -140,8 +134,8 @@
             - ReadWriteOnce
             - ReadWriteMany
             nfs:
-              path: "/srv/nfs/user-vols/{{ item }}"
-              server: "{{ groups['masters'][0] }}"
+              path: "/mnt/nfs/user-vols/pv-{{ item }}"
+              server: "{{ groups['nfs'][0] }}"
             persistentVolumeReclaimPolicy: Recycle
       loop: "{{ range(50,55)|list }}"
 

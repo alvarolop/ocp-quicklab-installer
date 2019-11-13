@@ -86,7 +86,7 @@ openshift_logging_storage_access_modes=['ReadWriteOnce']
 openshift_logging_storage_nfs_directory=/srv/nfs
 openshift_logging_storage_nfs_options='*(rw,root_squash)'
 openshift_logging_storage_volume_name=logging
-openshift_logging_storage_volume_size=10Gi
+openshift_logging_storage_volume_size=6Gi
 openshift_logging_storage_labels={:storage=>"logging"}
 
 
@@ -108,7 +108,7 @@ openshift_metrics_storage_access_modes=['ReadWriteOnce']
 openshift_metrics_storage_nfs_directory=/srv/nfs
 openshift_metrics_storage_nfs_options='*(rw,root_squash)'
 openshift_metrics_storage_volume_name=metrics
-openshift_metrics_storage_volume_size=10Gi
+openshift_metrics_storage_volume_size=6Gi
 openshift_metrics_storage_labels={'storage': 'metrics'}
 
 
@@ -117,11 +117,12 @@ openshift_metrics_storage_labels={'storage': 'metrics'}
 ###################################################################################
 
 openshift_cluster_monitoring_operator_install=true
-openshift_cluster_monitoring_operator_prometheus_storage_capacity=25Gi
+openshift_cluster_monitoring_operator_prometheus_storage_enabled=true
+openshift_cluster_monitoring_operator_prometheus_storage_capacity=15Gi
+openshift_cluster_monitoring_operator_alertmanager_storage_enabled=true
 openshift_cluster_monitoring_operator_alertmanager_storage_capacity=2Gi
 openshift_cluster_monitoring_operator_node_selector={"node-role.kubernetes.io/infra": "true"}
-openshift_cluster_monitoring_operator_alertmanager_storage_enabled=true
-openshift_cluster_monitoring_operator_prometheus_storage_enabled=true
+
 
 ###################################################################################
 ### 6. Service Catalog Components: API server, Template Service Broker, Ansible Broker
@@ -208,6 +209,6 @@ oreg_auth_password= {{ rh_registry_token }}
 {% endfor %}
 
 [nfs]
-{{ groups['masters'][0] }}
+{{ groups['infra'][0] }}
 
 

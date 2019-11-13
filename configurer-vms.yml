@@ -11,30 +11,30 @@
         regexp: "^%wheel"
         line: "%wheel ALL=(ALL) NOPASSWD: ALL"
         validate: '/usr/sbin/visudo -cf %s'
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Register as user and password using a given pool id
       redhat_subscription:
         state: present
         username: "{{ rh_subscription_username }}"
         password: "{{ rh_subscription_password }}"
         pool_ids: "{{ rh_subscription_poolid }}"
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Enable only the repositories required by OCP
       rhsm_repository:
         name: "{{ repositories }}"
         purge: True
         state: present
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Ensure EPEL is enabled. No package matching 'bash-completion-extras'
       yum:
         name: https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm
         state: present
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Install necessary packages
       yum:
         name: "{{ packages.all }}"
         state: latest
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Lock Ansible version
       command: yum versionlock add ansible
       when: reinstall_packages
@@ -42,10 +42,10 @@
       yum:
         name: '*'
         state: latest
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Unconditionally reboot the machine with all defaults
       reboot:
-      when: reinstall_packages
+      when: reinstall_packages|bool
 
       
 - name: Install packages in bastion and copy OCP installer files
@@ -58,7 +58,7 @@
       yum:
         name: "{{ packages.bastion }}"
         state: latest
-      when: reinstall_packages
+      when: reinstall_packages|bool
     - name: Copy the installation playbooks to bastion
       copy:
         src: "ocp-installer/"
